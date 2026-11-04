@@ -27,11 +27,14 @@ out/                              产物（PDF 不提交）
 
 1. GitHub 新建**公开**仓库，把上面内容推上去
 2. 飞书开放平台建自建应用，开权限：
-   - `sheets:spreadsheet:readonly`
-   - `im:message:send_as_bot`
-   - `im:resource`
-3. 发布应用，把机器人拉进群「装箱清单出图」
-4. 仓库 Secrets 填 `FEISHU_APP_ID`、`FEISHU_APP_SECRET`
+   - `sheets:spreadsheet:readonly` 读取在线表格
+   - `im:message:send_as_bot` 以机器人身份发消息
+   - `im:resource` 上传/发送文件
+   - `im:message:readonly` 读取消息（轮询指令必需）
+   - `im:message.group_msg` 获取群组中所有消息（敏感权限，需管理员审批）
+3. 添加「机器人」应用能力 → 发布版本 → 管理员审核通过
+4. 把机器人拉进群「装箱清单出图」
+5. 仓库 Secrets 填 `FEISHU_APP_ID`、`FEISHU_APP_SECRET`
 
 ## 二、跑起来
 

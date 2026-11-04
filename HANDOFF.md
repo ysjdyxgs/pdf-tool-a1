@@ -73,8 +73,8 @@
 ### A. 飞书自建应用（手机可操作，~10 分钟）
 1. https://open.feishu.cn/app → 创建企业自建应用
 2. 记下 App ID / App Secret
-3. 权限管理添加：`sheets:spreadsheet:readonly`、`im:message:send_as_bot`、`im:resource`
-4. 版本管理与发布 → 创建版本并发布
+3. 权限管理添加：`sheets:spreadsheet:readonly`、`im:message:send_as_bot`、`im:resource`、`im:message:readonly`、`im:message.group_msg`（最后一个是敏感权限，需管理员审批；缺它轮询读不到群消息）
+4. 添加「机器人」应用能力 → 版本管理与发布 → 创建版本并发布
 5. 把应用里的**机器人**拉进群「装箱清单出图」
 
 ### B. GitHub（~5 分钟）
