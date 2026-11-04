@@ -1,0 +1,11 @@
+{
+  "chat_id": "oc_ef3238d3693e9fd352b19fc5ac345660",
+  "interval_seconds": 15,
+  "layers": {
+    "6层": {
+      "spreadsheet": "CGxlsUcWch03HMt6K8YcyxyvnSh",
+      "dwg": "/workspace/.uploads/a31a3002-982c-483b-a764-3f22e6e80b1a_6层装箱清单202308).dwg",
+      "out": "/workspace/output/6层装箱清单.pdf"
+    }
+  }
+}

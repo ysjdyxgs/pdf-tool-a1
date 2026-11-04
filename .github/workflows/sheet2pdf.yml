@@ -1,0 +1,45 @@
+name: sheet2pdf
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"      # 公开仓库不限时长；实际触发常延迟 5–15 分钟
+  workflow_dispatch:            # 需要立刻出图时手动点一下
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sheet2pdf
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: 字体
+        run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk
+
+      - name: 依赖
+        run: pip install matplotlib openpyxl requests
+
+      - name: 轮询并出图
+        env:
+          FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+        run: python deploy/runner.py
+
+      - name: 回写处理记录
+        run: |
+          git config user.name "sheet2pdf-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add deploy/state.json
+          git diff --cached --quiet || git commit -m "chore: update seen messages"
+          git push

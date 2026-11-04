@@ -1,0 +1,7 @@
+out/
+work/
+deploy/work/
+__pycache__/
+*.pyc
+.uploads/
+.screenshots/
