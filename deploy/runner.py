@@ -14,7 +14,8 @@ from openpyxl import Workbook, load_workbook
 
 BASE = "https://open.feishu.cn/open-apis"
 CONFIG = "deploy/config.json"
-STATE = "deploy/state.json"
+STATE = "deploy/seen.ndjson"        # 一行一个 message_id，便于多运行自动合并
+LEGACY_STATE = "deploy/state.json"   # 旧格式，仅用于首次迁移
 TPL_DIR = "deploy/templates"
 PIPELINE = ".trae/skills/dwg-sheet-text-pdf/scripts/pipeline.py"
 
@@ -146,6 +147,22 @@ def sync_tpl(layer, struct):
 
 
 # ---------------------------------------------------------------- 出图
+def load_seen():
+    """已处理消息 id：新格式一行一个，旧 state.json 只在首次迁移时读一次。"""
+    ids = []
+    if os.path.exists(LEGACY_STATE):
+        try:
+            ids = json.load(open(LEGACY_STATE, encoding="utf-8")).get("seen", [])
+        except Exception:
+            ids = []
+    if os.path.exists(STATE):
+        for line in open(STATE, encoding="utf-8"):
+            line = line.strip()
+            if line:
+                ids.append(line)
+    return set(ids)
+
+
 def sheet_token(s):
     """config 里可以直接填 /sheets/<token> 形式的 URL，这里统一取 token。"""
     return s.strip().rstrip("/").split("?")[0].split("/")[-1]
@@ -282,15 +299,15 @@ def main():
                       f"已同步模板，请复核后再发指令出图。")
 
     # 2) 处理指令
-    seen = json.load(open(STATE)) if os.path.exists(STATE) else {"seen": []}
-    ids = seen.get("seen", [])
+    seen = load_seen()
     pat = re.compile(r"(\d+)\s*层[。.!！]?")
     for m in reversed(messages(tk, chat_id)):
         mid = m.get("message_id")
-        if not mid or mid in ids:
+        if not mid or mid in seen:
             continue
-        ids.append(mid)
-        json.dump({"seen": ids[-100:]}, open(STATE, "w"))
+        seen.add(mid)
+        with open(STATE, "a", encoding="utf-8") as f:
+            f.write(mid + "\n")
         if m.get("sender", {}).get("sender_type") == "app":
             continue
         txt = re.sub(r"@\S+", "", text_of(m)).strip()
