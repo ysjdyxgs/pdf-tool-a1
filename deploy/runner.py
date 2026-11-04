@@ -8,7 +8,7 @@
   1. 每轮先比对在线表格结构与 templates/<层>.json，有变化就更新模板并通知，本轮不出图
   2. 结构一致后，才把消息里的「N层」当成出图指令
 """
-import json, os, re, subprocess, sys
+import json, os, re, shutil, subprocess, sys
 import requests
 from openpyxl import Workbook, load_workbook
 
@@ -158,7 +158,7 @@ def generate(cfg, layer):
     inv = os.path.join("work", os.path.basename(item["inventory"]))
     os.makedirs("work", exist_ok=True)
     if os.path.exists(item["inventory"]):
-        subprocess.run(["cp", item["inventory"], inv], check=True)
+        shutil.copy2(item["inventory"], inv)
         os.utime(inv)
     os.makedirs(os.path.dirname(item["out"]) or "out", exist_ok=True)
     r = subprocess.run([sys.executable, PIPELINE, item["dwg"], "--from-xlsx", tmp,
