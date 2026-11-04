@@ -171,6 +171,47 @@ def generate(cfg, layer):
     return item["out"], info
 
 
+# ---------------------------------------------------------------- 初始化
+def resolve_sheet(url):
+    """知识库链接 → 底层表格 token；/sheets/ 链接直接取 token。"""
+    m = re.search(r"/wiki/([A-Za-z0-9]+)", url)
+    if not m:
+        return sheet_token(url)
+    d = api(token(), "GET", "/wiki/v2/spaces/get_node", params={"token": m.group(1)})
+    node = d.get("node", {})
+    print(f"知识库节点：{node.get('title', '')}（{node.get('obj_type')}）")
+    if node.get("obj_type") != "sheet":
+        raise RuntimeError("该知识库节点不是电子表格，无法当数据源")
+    return node["obj_token"]
+
+
+def bootstrap(url, write=False):
+    """一条命令完成：解析表格 token → 校验表结构 → 列出机器人所在群 → 写回 config。"""
+    sht = resolve_sheet(url)
+    print(f"表格 token：{sht}")
+    st = structure(token(), sht)
+    print(f"表格结构：表头 {st['header']}，数据 {st['rows']} 行，信息 {st['info']}")
+
+    chats = api(token(), "GET", "/im/v1/chats", params={"page_size": 50}).get("items", [])
+    if not chats:
+        print("机器人不在任何群里，先把机器人拉进群再跑一次")
+        return
+    print("机器人所在群：")
+    for c in chats:
+        print(f"  {c['chat_id']}\t{c.get('name', '')}")
+    picked = [c for c in chats if "装箱" in (c.get("name") or "")] or chats
+    if not write:
+        return
+    if len(picked) != 1:
+        print("群不唯一，未写 chat_id；请手动指定")
+        return
+    cfg = json.load(open(CONFIG, encoding="utf-8"))
+    cfg["chat_id"] = picked[0]["chat_id"]
+    cfg["layers"]["6层"]["spreadsheet"] = sht
+    json.dump(cfg, open(CONFIG, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+    print(f"已写入 config.json：chat_id={cfg['chat_id']}，spreadsheet={sht}")
+
+
 # ---------------------------------------------------------------- 本地自检
 def selftest(path):
     """用本地 xlsx 模拟在线表格，验证结构比对逻辑。"""
@@ -216,6 +257,10 @@ def main():
         sht = sheet_token(sys.argv[sys.argv.index("--check-sheet") + 1])
         print(structure(token(), sht))
         return
+
+    if "--bootstrap" in sys.argv:
+        url = sys.argv[sys.argv.index("--bootstrap") + 1]
+        return bootstrap(url, write="--write" in sys.argv)
 
     cfg = json.load(open(CONFIG, encoding="utf-8"))
     chat_id = cfg["chat_id"]
