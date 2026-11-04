@@ -40,6 +40,7 @@ jobs:
         run: |
           git config user.name "sheet2pdf-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add deploy/state.json
-          git diff --cached --quiet || git commit -m "chore: update seen messages"
-          git push
+          test -f deploy/state.json || echo '{"seen": []}' > deploy/state.json
+          git add deploy/state.json deploy/templates
+          git diff --cached --quiet || git commit -m "chore: update state and templates"
+          git push || (git pull --rebase --autostash && git push)
