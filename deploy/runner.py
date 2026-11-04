@@ -146,10 +146,15 @@ def sync_tpl(layer, struct):
 
 
 # ---------------------------------------------------------------- 出图
+def sheet_token(s):
+    """config 里可以直接填 /sheets/<token> 形式的 URL，这里统一取 token。"""
+    return s.strip().rstrip("/").split("?")[0].split("/")[-1]
+
+
 def generate(cfg, layer):
     item = cfg["layers"][layer]
     tmp = f"out/{layer}.xlsx"
-    build_xlsx(token(), item["spreadsheet"], tmp)
+    build_xlsx(token(), sheet_token(item["spreadsheet"]), tmp)
     inv = os.path.join("work", os.path.basename(item["inventory"]))
     os.makedirs("work", exist_ok=True)
     if os.path.exists(item["inventory"]):
@@ -201,6 +206,17 @@ def main():
     if "--self-test" in sys.argv:
         return selftest(sys.argv[sys.argv.index("--self-test") + 1])
 
+    if "--list-chats" in sys.argv:
+        tk = token()
+        for c in api(tk, "GET", "/im/v1/chats", params={"page_size": 50}).get("items", []):
+            print(f"{c['chat_id']}\t{c.get('name', '')}")
+        return
+
+    if "--check-sheet" in sys.argv:
+        sht = sheet_token(sys.argv[sys.argv.index("--check-sheet") + 1])
+        print(structure(token(), sht))
+        return
+
     cfg = json.load(open(CONFIG, encoding="utf-8"))
     chat_id = cfg["chat_id"]
     tk = token()
@@ -209,7 +225,7 @@ def main():
     changed_layers = set()
     for layer, item in cfg["layers"].items():
         try:
-            ch = sync_tpl(layer, structure(tk, item["spreadsheet"]))
+            ch = sync_tpl(layer, structure(tk, sheet_token(item["spreadsheet"])))
         except Exception as e:
             send_text(tk, chat_id, f"读取「{layer}」表格失败：{e}")
             changed_layers.add(layer)
